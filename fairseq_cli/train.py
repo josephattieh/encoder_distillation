@@ -126,6 +126,21 @@ def main(args):
                 args.teacher_ckpt_path, teacher_state["optimizer_history"][-1]['num_updates'],
             )
         )
+        if args.distil_strategy == "language_distillation":
+            import copy
+            model.decoder = copy.deepcopy(teacher_model.decoder)
+            logger.info(
+                "Loaded decoder of the student from the teacher."
+            )
+
+            def freeze_module_params(m):
+                if m is not None:
+                    for p in m.parameters():
+                        p.requires_grad = False
+            logger.info(
+                "Freezing the decoder of the student"
+            )
+            freeze_module_params(model.decoder)
         args.encoder_layers = temp_encoder_layers
         args.decoder_layers = temp_decoder_layers
     
