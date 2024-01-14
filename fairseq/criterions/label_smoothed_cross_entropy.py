@@ -80,8 +80,7 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         2) the sample size, which is used as the denominator for the gradient
         3) logging outputs to display while training
         """
-        net_output = teacher_model(**sample['net_input'])
-        print("HERE")
+        net_output = model(**sample['net_input'])
         teacher_output = None
         if teacher_model is not None:
             with torch.no_grad():
@@ -140,11 +139,19 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         loss = None
         nll_loss = None
         extra_result = {}
-        if distil_strategy == 'normal' or teacher_output is None:
+        if distil_strategy == 'normal' or teacher_output is None :
             # not use distillation
             loss, nll_loss = label_smoothed_nll_loss(
                 lprobs, target, self.eps, ignore_index=self.padding_idx, reduce=reduce,
             )
+        elif distil_strategy =="language_distillation":
+            # only get supervision signal from KD
+            distil_lprobs = self.get_teacher_probs(teacher_output)
+            KL_loss = F.kl_div(lprobs, distil_lprobs, reduction='none')
+            KL_loss = KL_loss.sum(dim=-1)
+            KL_loss.masked_fill_(pad_mask, 0.)
+            loss = KL_loss.sum()
+            nll_loss = None
         elif distil_strategy == 'distil_all':
             # distill all word with no selection
             golden_loss, nll_loss = label_smoothed_nll_loss(
