@@ -21,7 +21,7 @@ We carry out our experiments on standard Transformer with the  [fairseq](https:/
 - To install fairseq and develop locally:
   ```
   cd fairseq
-  pip install --estable ./
+  pip install --editable ./
   ```
 
 ## Training
