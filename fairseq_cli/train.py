@@ -107,15 +107,18 @@ def main(args):
     # Load the latest checkpoint if one is available and restore the
     # corresponding train iterator
     extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer)
-
+    
     # use the distillation 
-    if args.use_distillation:
+    if args.use_distillation or args.load_encoder_from_teacher:
         temp_encoder_layers = args.encoder_layers
         temp_decoder_layers = args.decoder_layers
         args.encoder_layers = args.teacher_encoder_layers
         args.decoder_layers = args.teacher_decoder_layers
         teacher_model = task.build_model(args)
-        teacher_state = checkpoint_utils.load_teacher_checkpoint_to_cpu(args.teacher_ckpt_path)
+        if args.load_encoder_from_teacher:
+            teacher_state = checkpoint_utils.load_teacher_checkpoint_to_cpu(args.load_encoder_from_teacher)
+        else:
+            teacher_state = checkpoint_utils.load_teacher_checkpoint_to_cpu(args.teacher_ckpt_path)
         teacher_model.load_state_dict(
             teacher_state["model"], strict=True, args=args
         )
