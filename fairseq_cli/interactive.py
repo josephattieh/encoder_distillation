@@ -20,7 +20,7 @@ import torch
 
 from fairseq import checkpoint_utils, distributed_utils, options, tasks, utils
 from fairseq.data import encoders
-from fairseq_cli.generate import get_symbols_to_strip_from_output
+from .generate import get_symbols_to_strip_from_output
 
 
 logging.basicConfig(

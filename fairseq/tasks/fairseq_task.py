@@ -138,7 +138,7 @@ class FairseqTask(object):
                 raise Exception((
                     'Size of sample #{} is invalid (={}) since max_positions={}, '
                     'skip this example with --skip-invalid-size-inputs-valid-test'
-                ).format(str(ignored), dataset.size(ignored[0]), max_positions))
+                ).format(ignored[0], dataset.size(ignored[0]), max_positions))
             logger.warning((
                 '{} samples have invalid sizes and will be skipped, '
                 'max_positions={}, first few sample ids={}'
