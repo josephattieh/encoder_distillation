@@ -44,17 +44,19 @@ def main(args):
     def train_path(lang):
         return "{}{}".format(args.trainpref, ("." + lang) if lang else "")
 
-    def file_name(prefix, lang):
+    def file_name(prefix, lang, enable=True):
         fname = prefix
         if lang is not None:
             fname += ".{lang}".format(lang=lang)
+        if args.suffix and enable:
+            fname+= str(args.suffix)
         return fname
 
-    def dest_path(prefix, lang):
-        return os.path.join(args.destdir, file_name(prefix, lang))
+    def dest_path(prefix, lang, enable=True):
+        return os.path.join(args.destdir, file_name(prefix, lang, enable))
 
     def dict_path(lang):
-        return dest_path("dict", lang) + ".txt"
+        return dest_path("dict", lang,enable=False) + ".txt"
 
     def build_dictionary(filenames, src=False, tgt=False):
         assert src ^ tgt
@@ -117,8 +119,8 @@ def main(args):
             n_seq_tok[0] += worker_result["nseq"]
             n_seq_tok[1] += worker_result["ntok"]
 
-        input_file = "{}{}".format(
-            input_prefix, ("." + lang) if lang is not None else ""
+        input_file = "{}{}{}".format(
+            input_prefix, ("." + lang) if lang is not None else "" ,  args.suffix if args.suffix is not None else ""
         )
         offsets = Binarizer.find_offsets(input_file, num_workers)
         pool = None

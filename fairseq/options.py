@@ -274,6 +274,7 @@ def get_parser(desc, default_task="translation"):
     parser.add_argument('--teacher-ckpt-path', default='', help='the checkpoints path of teacher models')
     parser.add_argument('--distil-strategy', default='normal', help='set the strategy of the distillation')
     parser.add_argument('--distil-rate', default=0.5, type=float, help='set the rate of the distillation')
+    parser.add_argument('--load-encoder', type=str, help='path to teacher model')
     parser.add_argument('--teacher-distil-rate', default=0.5, type=float, help='set the rate of the distillation')
     parser.add_argument('--kl-loss-combine-rate', default=0.5, type=float, help='set the kl loss combine rate')
     parser.add_argument('--distil-schedule', default="unchange", type=str, help='set the distil schedule')
@@ -324,6 +325,8 @@ def add_preprocess_args(parser):
                        help="target language")
     group.add_argument("--trainpref", metavar="FP", default=None,
                        help="train file prefix")
+    group.add_argument("--suffix", default=None,
+                       help="suffix")
     group.add_argument("--validpref", metavar="FP", default=None,
                        help="comma separated, valid file prefixes")
     group.add_argument("--testpref", metavar="FP", default=None,
