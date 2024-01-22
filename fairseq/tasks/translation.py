@@ -325,9 +325,9 @@ class TranslationTask(FairseqTask):
                 if torch.is_tensor(totals):
                     totals = totals.cpu()
 
-                if type(counts) is list:
+                if type(counts) is list and torch.is_tensor(counts[0]):
                     counts = [ c.cpu() for c in counts]
-                if type(totals) is list:
+                if type(totals) is list and torch.is_tensor(totals[0]):
                     totals = [ c.cpu() for c in totals]
                  
                 metrics.log_scalar('_bleu_counts', np.array(counts))
