@@ -319,6 +319,17 @@ class TranslationTask(FairseqTask):
 
             if max(totals) > 0:
                 # log counts as numpy arrays -- log_scalar will sum them correctly
+                import torch
+                if torch.is_tensor(counts):
+                    counts = counts.cpu()
+                if torch.is_tensor(totals):
+                    totals = totals.cpu()
+
+                if type(counts) is list and torch.is_tensor(counts[0]):
+                    counts = [ c.cpu() for c in counts]
+                if type(totals) is list and torch.is_tensor(totals[0]):
+                    totals = [ c.cpu() for c in totals]
+                 
                 metrics.log_scalar('_bleu_counts', np.array(counts))
                 metrics.log_scalar('_bleu_totals', np.array(totals))
                 metrics.log_scalar('_bleu_sys_len', sum_logs('_bleu_sys_len'))

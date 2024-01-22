@@ -107,7 +107,41 @@ def main(args):
     # Load the latest checkpoint if one is available and restore the
     # corresponding train iterator
     extra_state, epoch_itr = checkpoint_utils.load_checkpoint(args, trainer)
+    if args.load_encoder:
+        temp_encoder_layers = args.encoder_layers
+        temp_decoder_layers = args.decoder_layers
+        args.encoder_layers = args.teacher_encoder_layers
+        args.decoder_layers = args.teacher_decoder_layers
+        teacher_model = task.build_model(args)
+        teacher_state = checkpoint_utils.load_teacher_checkpoint_to_cpu(args.load_encoder)
+        teacher_model.load_state_dict(
+            teacher_state["model"], strict=True, args=args
+        )
+        teacher_model.to(device=trainer.device)
+        trainer.teacher_model = teacher_model
+        logger.info(
+            "loaded checkpoint {} ({} updates)".format(
+                args.teacher_ckpt_path, teacher_state["optimizer_history"][-1]['num_updates'],
+            )
+        )
+        import copy
+        model.decoder = copy.deepcopy(teacher_model.decoder)
+        logger.info(
+                "Loaded decoder of the student from the teacher."
+            )
 
+        def freeze_module_params(m):
+            if m is not None:
+                for p in m.parameters():
+                    p.requires_grad = False
+        logger.info(
+                "Freezing the decoder of the student"
+            )
+        freeze_module_params(model.decoder)
+  
+        args.encoder_layers = temp_encoder_layers
+        args.decoder_layers = temp_decoder_layers
+    
     # use the distillation 
     if args.use_distillation:
         temp_encoder_layers = args.encoder_layers
@@ -140,7 +174,13 @@ def main(args):
             logger.info(
                 "Freezing the decoder of the student"
             )
-            freeze_module_params(model.decoder)
+           # freeze_module_params(model.decoder)
+
+            #check if student has same decoder as teacher
+            print(model.decoder.layers[0])
+            print(teacher_model.decoder.layers[0])
+            #check if decoder of student is frozen
+
         args.encoder_layers = temp_encoder_layers
         args.decoder_layers = temp_decoder_layers
     

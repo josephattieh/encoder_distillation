@@ -72,7 +72,7 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         else:
             self.teacher_loss_queue = torch.cat((self.teacher_loss_queue[tensor_size: ], tensor))
 
-    def forward(self, model, sample, reduce=True, teacher_model=None, update_num=None):
+    def forward(self, model, sample, reduce=True, teacher_model=None, update_num=None, train=None):
         """Compute the loss for the given sample.
 
         Returns a tuple with three elements:
@@ -89,7 +89,8 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         loss, nll_loss, extra_result = self.compute_loss(model, net_output, sample, reduce=reduce, 
                                             teacher_output=teacher_output, 
                                             distil_strategy=self.task.args.distil_strategy,
-                                            update_num=update_num)
+                                            update_num=update_num,
+                                            train =train)
         sample_size = sample['target'].size(0) if self.sentence_avg else sample['ntokens']
         logging_output = {
             'loss': loss.data,
@@ -126,7 +127,7 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         distil_lprobs = F.softmax(teacher_predict, dim=-1, dtype=torch.float32) # B x T x vocab
         return distil_lprobs
 
-    def compute_loss(self, model, net_output, sample, reduce=True, teacher_output=None, distil_strategy="normal", update_num=None):
+    def compute_loss(self, model, net_output, sample, reduce=True, teacher_output=None, distil_strategy="normal", update_num=None, train=None):
         probs = model.get_normalized_probs(net_output, log_probs=False)
         lprobs = torch.log(probs)
         probs = probs.view(-1, lprobs.size(-1))
@@ -138,11 +139,19 @@ class LabelSmoothedCrossEntropyCriterion(FairseqCriterion):
         loss = None
         nll_loss = None
         extra_result = {}
-        if distil_strategy == 'normal' or teacher_output is None:
+        if distil_strategy == 'normal' or teacher_output is None :
             # not use distillation
             loss, nll_loss = label_smoothed_nll_loss(
                 lprobs, target, self.eps, ignore_index=self.padding_idx, reduce=reduce,
             )
+        elif distil_strategy =="language_distillation":
+            # only get supervision signal from KD
+            distil_lprobs = self.get_teacher_probs(teacher_output)
+            KL_loss = F.kl_div(lprobs, distil_lprobs, reduction='none')
+            KL_loss = KL_loss.sum(dim=-1)
+            KL_loss.masked_fill_(pad_mask, 0.)
+            loss = KL_loss.sum()
+            nll_loss = None
         elif distil_strategy == 'distil_all':
             # distill all word with no selection
             golden_loss, nll_loss = label_smoothed_nll_loss(
